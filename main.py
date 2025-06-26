@@ -23,6 +23,15 @@ def main():
 
         # Draw the results on the frame
         frame = draw_detections(frame, detections)
+        
+        #Calculate FPS
+        current_time = time.time()
+        fps = 1 / (current_time - prev_time)
+        prev_time = current_time
+        
+        #Display FPS on frame
+        cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         # Show the frame
         cv2.imshow("Self-Driving View", frame)
