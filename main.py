@@ -1,4 +1,6 @@
 import cv2
+import time
+
 from yolo.yolo_detector import YoloDetector
 from utils.draw import draw_detections
 
@@ -9,6 +11,7 @@ def main():
     # Load YOLO model
     detector = YoloDetector(weights_path='yolo11n.pt')
 
+    prev_time = 0
 
     while True:
         ret, frame = cap.read()
