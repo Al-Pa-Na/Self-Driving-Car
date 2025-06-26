@@ -1,0 +1,20 @@
+# Python virtual environment
+yolocar_env/
+
+# System files
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Model weights and large files
+*.pt
+weights/
+
+# IDE or editor configs
+.vscode/
+*.idea/
+.DS_Store
+
+# OS junk
+Thumbs.db
