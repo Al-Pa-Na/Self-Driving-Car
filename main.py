@@ -3,6 +3,7 @@ import time
 
 from yolo.yolo_detector import YoloDetector
 from utils.draw import draw_detections
+from utils.lane_detection import detect_lane
 
 def main():
     # Initialize video capture
@@ -23,6 +24,9 @@ def main():
 
         # Draw the results on the frame
         frame = draw_detections(frame, detections)
+        
+        # Apply lane detection and get frame with detected lines overlaid
+        frame = detect_lane(frame)
         
         #Calculate FPS
         current_time = time.time()
