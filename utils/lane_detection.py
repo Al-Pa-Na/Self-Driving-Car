@@ -40,4 +40,38 @@ def detect_lane(frame):
 
     # Combine the original frame with the line image
     combined = cv2.addWeighted(frame, 0.8, line_image, 1, 0)
-    return combined
+    return combined, lines
+
+# Determine lane direction based on slopes of detected lines
+def get_lane_direction(lines):
+    if lines is None:
+        return "No lane detected"
+
+    left_slopes = []
+    right_slopes = []
+
+    for line in lines:
+        for x1, y1, x2, y2 in line:
+            if x2 == x1:
+                continue  # avoid division by zero
+            slope = (y2 - y1) / (x2 - x1)
+            # Categorize slopes as left or right lanes based on sign and threshold
+            if slope < -0.3:
+                left_slopes.append(slope)
+            elif slope > 0.3:
+                right_slopes.append(slope)
+
+    # If no slopes detected, assume going straight
+    if len(left_slopes) == 0 and len(right_slopes) == 0:
+        return "Straight"
+
+    avg_left = np.mean(left_slopes) if left_slopes else 0
+    avg_right = np.mean(right_slopes) if right_slopes else 0
+
+    # Decide turn direction based on dominant slope
+    if abs(avg_left) > abs(avg_right):
+        return "Turn Left"
+    elif abs(avg_right) > abs(avg_left):
+        return "Turn Right"
+    else:
+        return "Straight"
