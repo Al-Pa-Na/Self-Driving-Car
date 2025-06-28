@@ -30,17 +30,26 @@ def detect_lane(frame):
         minLineLength=100,
         maxLineGap=50
     )
-
-    # Draw the lines on a blank image
-    line_image = np.zeros_like(frame)
+    
+    filtered_lines = []
     if lines is not None:
         for line in lines:
             x1, y1, x2, y2 = line[0]
-            cv2.line(line_image, (x1, y1), (x2, y2), (0, 255, 255), 3)
+            angle = abs(np.arctan2(y2 - y1, x2 - x1) * 180.0 / np.pi)
+            if 20 < angle < 160:  # remove nearly vertical and flat lines
+                filtered_lines.append([[x1, y1, x2, y2]])
+
+
+    # Draw the lines on a blank image
+    line_image = np.zeros_like(frame)
+    for line in filtered_lines:
+        x1, y1, x2, y2 = line[0]
+        cv2.line(line_image, (x1, y1), (x2, y2), (0, 255, 255), 3)
+
 
     # Combine the original frame with the line image
     combined = cv2.addWeighted(frame, 0.8, line_image, 1, 0)
-    return combined, lines
+    return combined, filtered_lines
 
 # Determine lane direction based on slopes of detected lines
 def get_lane_direction(lines):
