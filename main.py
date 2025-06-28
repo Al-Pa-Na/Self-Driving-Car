@@ -7,11 +7,12 @@ from utils.lane_detection import detect_lane, get_lane_direction
 from utils.tracker import ObjectTracker
 from utils.controller import decide_steering_action
 from utils.proximity import check_proximity
+from utils.steering_overlay import overlay_steering_wheel
 
 def main():
     use_webcam = False
 
-    video_path = 'assets/videos/test_video.mp4'
+    video_path = 'assets/videos/test_video3.mp4'
     cap = cv2.VideoCapture(0 if use_webcam else video_path)
 
     # Load YOLO model
@@ -60,6 +61,13 @@ def main():
         # Decide steering action based on direction
         action = decide_steering_action(direction)
         
+        if action == "Turn Left":
+            angle = 30
+        elif action == "Turn Right":
+            angle = -30
+        else:
+            angle = 0
+        
         # Get proximity status
         frame_height, frame_width = frame.shape[:2]
         proximity_status = check_proximity(tracked_objects, frame_width, frame_height)
@@ -72,6 +80,8 @@ def main():
         # Display steering action on the frame
         cv2.putText(frame, f"Action: {action}", (10, 110),
             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+        
+        frame = overlay_steering_wheel(frame, action)
 
         
         #Calculate FPS
