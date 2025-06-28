@@ -8,17 +8,20 @@ from utils.tracker import ObjectTracker
 from utils.controller import decide_steering_action
 from utils.proximity import check_proximity
 from utils.steering_overlay import overlay_steering_wheel
+from utils.path_visualizer import PathVisualizer
+from utils.draw import draw_trails
 
 def main():
     use_webcam = False
 
-    video_path = 'assets/videos/test_video3.mp4'
+    video_path = 'assets/videos/test_video1.mp4'
     cap = cv2.VideoCapture(0 if use_webcam else video_path)
 
     # Load YOLO model
     detector = YoloDetector(weights_path='yolo11n.pt')
     
     tracker = ObjectTracker()
+    path_viz = PathVisualizer()
 
     prev_time = 0
 
@@ -43,6 +46,13 @@ def main():
         tracked_objects = []
         for obj in tracked_objects_np:
             x1, y1, x2, y2, track_id = obj.astype(int)
+            
+            # Update path for the object with ID 1 (assumed to be the car)
+            center_x = int((x1 + x2) / 2)
+            center_y = int((y1 + y2) / 2)
+            if track_id == 1:
+                path_viz.update_path((center_x, center_y))
+                
             tracked_objects.append({
             "bbox": [x1, y1, x2, y2],
             "confidence": 1.0,  # Or track confidence if available
@@ -51,6 +61,8 @@ def main():
 
         # Draw tracked detections on the frame
         frame = draw_detections(frame, tracked_objects)
+        
+        frame = draw_trails(frame, tracked_objects)
         
         # Apply lane detection and get frame with lines info
         frame, lines = detect_lane(frame)
@@ -92,7 +104,8 @@ def main():
         #Display FPS on frame
         cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
+        
+        frame = path_viz.draw_path(frame)
         # Show the frame
         cv2.imshow("Self-Driving View", frame)
 
