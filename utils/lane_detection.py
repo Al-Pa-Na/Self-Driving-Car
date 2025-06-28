@@ -65,13 +65,16 @@ def get_lane_direction(lines):
                 continue  # avoid division by zero
             slope = (y2 - y1) / (x2 - x1)
             # Categorize slopes as left or right lanes based on sign and threshold
-            if slope < -0.3:
+            if slope < -0.5:
                 left_slopes.append(slope)
-            elif slope > 0.3:
+            elif slope > 0.5:
                 right_slopes.append(slope)
 
     # If no slopes detected, assume going straight
     if len(left_slopes) == 0 and len(right_slopes) == 0:
+        return "Straight"
+    
+    if len(left_slopes) < 3 and len(right_slopes) < 3:
         return "Straight"
 
     avg_left = np.mean(left_slopes) if left_slopes else 0
