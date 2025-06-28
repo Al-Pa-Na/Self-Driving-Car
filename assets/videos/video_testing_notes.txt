@@ -1,0 +1,3 @@
+test_video1.mp4 | First test video (morning time). Lane borders were detected well. Established baseline lane detection.
+test_video2.mp4 | Evening time video. Lane borders not clearly detected. Realized need for better filtering based on angle and light conditions.
+test_video3.mp4 | Tested video with heavy shadows and multiple vertical edges. Improved Hough Line filtering to avoid irrelevant lines.
