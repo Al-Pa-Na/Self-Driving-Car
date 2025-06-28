@@ -10,12 +10,19 @@ from utils.proximity import check_proximity
 from utils.steering_overlay import overlay_steering_wheel
 from utils.path_visualizer import PathVisualizer
 from utils.draw import draw_trails
+from collections import deque, Counter
+
+direction_history = deque(maxlen = 8)
 
 def main():
     use_webcam = False
 
     video_path = 'assets/videos/test_video1.mp4'
     cap = cv2.VideoCapture(0 if use_webcam else video_path)
+    
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('output.avi', fourcc, 20.0, (1280, 720))
+
 
     # Load YOLO model
     detector = YoloDetector(weights_path='yolo11n.pt')
@@ -24,6 +31,7 @@ def main():
     path_viz = PathVisualizer()
 
     prev_time = 0
+    current_angle = 0
 
     while True:
         ret, frame = cap.read()
@@ -46,12 +54,6 @@ def main():
         tracked_objects = []
         for obj in tracked_objects_np:
             x1, y1, x2, y2, track_id = obj.astype(int)
-            
-            # Update path for the object with ID 1 (assumed to be the car)
-            center_x = int((x1 + x2) / 2)
-            center_y = int((y1 + y2) / 2)
-            if track_id == 1:
-                path_viz.update_path((center_x, center_y))
                 
             tracked_objects.append({
             "bbox": [x1, y1, x2, y2],
@@ -59,6 +61,14 @@ def main():
             "class": f"id {track_id}"
             })
 
+        # Identify the object closest to bottom (likely own car)
+        own_car = min(tracked_objects, key=lambda o: o['bbox'][1]) if tracked_objects else None
+        if own_car:
+            bbox = own_car["bbox"]
+            center_x = (bbox[0] + bbox[2]) // 2
+            center_y = (bbox[1] + bbox[3]) // 2
+            path_viz.update_path((center_x, center_y))
+            
         # Draw tracked detections on the frame
         frame = draw_detections(frame, tracked_objects)
         
@@ -67,18 +77,24 @@ def main():
         # Apply lane detection and get frame with lines info
         frame, lines = detect_lane(frame)
 
-        # Get lane direction based on detected lines
-        direction = get_lane_direction(lines)
+        # Get current lane direction
+        current_direction = get_lane_direction(lines)
         
+        # Append to history and compute the most frequent direction
+        direction_history.append(current_direction)
+        direction = Counter(direction_history).most_common(1)[0][0]
+
         # Decide steering action based on direction
         action = decide_steering_action(direction)
         
-        if action == "Turn Left":
-            angle = 30
-        elif action == "Turn Right":
-            angle = -30
-        else:
-            angle = 0
+        target_angle = action
+            
+        # Smooth transition
+        steering_speed = 5  # degrees per frame
+        if current_angle < target_angle:
+            current_angle = min(current_angle + steering_speed, target_angle)
+        elif current_angle > target_angle:
+            current_angle = max(current_angle - steering_speed, target_angle)
         
         # Get proximity status
         frame_height, frame_width = frame.shape[:2]
@@ -93,7 +109,7 @@ def main():
         cv2.putText(frame, f"Action: {action}", (10, 110),
             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
         
-        frame = overlay_steering_wheel(frame, action)
+        frame = overlay_steering_wheel(frame, current_angle)
 
         
         #Calculate FPS
@@ -106,6 +122,8 @@ def main():
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
         frame = path_viz.draw_path(frame)
+        
+        out.write(frame)
         # Show the frame
         cv2.imshow("Self-Driving View", frame)
 
@@ -114,6 +132,7 @@ def main():
             break
 
     cap.release()
+    out.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
